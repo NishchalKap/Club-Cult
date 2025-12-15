@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,13 +31,7 @@ export default function MyTickets() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      fetchRegistrations();
-    }
-  }, [user]);
-
-  const fetchRegistrations = async () => {
+  const fetchRegistrations = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("event_registrations")
@@ -60,8 +54,8 @@ export default function MyTickets() {
         .order("registered_at", { ascending: false });
 
       if (error) throw error;
-      setRegistrations(data as any);
-    } catch (error: any) {
+      setRegistrations((data as Registration[]) || []);
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: "Failed to load your tickets",
@@ -70,7 +64,15 @@ export default function MyTickets() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, toast]);
+
+  useEffect(() => {
+    if (user) {
+      fetchRegistrations();
+    }
+  }, [user, fetchRegistrations]);
+
+
 
   const handleCancelRegistration = async (registrationId: string) => {
     if (!confirm("Are you sure you want to cancel this registration?")) return;
@@ -89,7 +91,7 @@ export default function MyTickets() {
       });
 
       fetchRegistrations();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: "Failed to cancel registration",
@@ -153,18 +155,17 @@ export default function MyTickets() {
                         className="w-full h-full object-cover"
                       />
                       <Badge
-                        className={`absolute top-3 right-3 ${
-                          reg.payment_status === "completed"
+                        className={`absolute top-3 right-3 ${reg.payment_status === "completed"
                             ? "bg-secondary"
                             : "bg-yellow-500"
-                        }`}
+                          }`}
                       >
                         {reg.payment_status === "completed" ? "Confirmed" : "Pending"}
                       </Badge>
                     </div>
                     <CardContent className="p-6">
                       <h3 className="font-bold text-lg mb-3">{reg.events.title}</h3>
-                      
+
                       <div className="space-y-2 text-sm mb-4">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -216,7 +217,7 @@ export default function MyTickets() {
                     </div>
                     <CardContent className="p-6">
                       <h3 className="font-bold text-lg mb-3">{reg.events.title}</h3>
-                      
+
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-muted-foreground" />

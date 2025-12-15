@@ -2,13 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Club Cult Design System - Unstop Inspired
+   Colors: Purple #7C3AED, Cyan #06B6D4, Pink #EC4899
+   All colors in HSL format.
 */
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    --background: 0 0% 100%;
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -17,61 +18,69 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 222 47% 11%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary: Purple #7C3AED */
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 91% 60%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary: Cyan #06B6D4 */
+    --secondary: 191 91% 43%;
+    --secondary-foreground: 0 0% 100%;
 
-    --accent: 215 95% 50%;
-    --accent-foreground: 210 40% 98%;
+    /* Accent: Pink #EC4899 */
+    --accent: 330 81% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --muted: 220 13% 95%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 262 52% 58%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 262 83% 58%;
 
     --radius: 0.75rem;
 
-    --gradient-blue: linear-gradient(135deg, hsl(215 95% 50%), hsl(217 91% 60%));
-    --gradient-cool: linear-gradient(135deg, hsl(215 95% 50%), hsl(180 100% 50%));
-    --shadow-blue: 0 10px 40px -10px hsl(215 95% 50% / 0.3);
-    --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    /* Gradients */
+    --gradient-purple-pink: linear-gradient(135deg, hsl(262 83% 58%), hsl(330 81% 60%));
+    --gradient-purple-cyan: linear-gradient(135deg, hsl(262 83% 58%), hsl(191 91% 43%));
+    --gradient-full: linear-gradient(135deg, hsl(262 83% 58%), hsl(330 81% 60%), hsl(191 91% 43%));
+    
+    /* Shadows */
+    --shadow-purple: 0 10px 40px -10px hsl(262 83% 58% / 0.4);
+    --shadow-pink: 0 10px 40px -10px hsl(330 81% 60% / 0.4);
+    --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   }
 
   .dark {
-    --background: 222 47% 11%;
+    --background: 222 47% 6%;
     --foreground: 210 40% 98%;
 
-    --card: 217 33% 17%;
+    --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 217 33% 17%;
+    --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 262 83% 68%;
+    --primary-foreground: 222 47% 6%;
 
-    --secondary: 217 91% 60%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 191 91% 53%;
+    --secondary-foreground: 222 47% 6%;
 
-    --accent: 215 95% 50%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 330 81% 70%;
+    --accent-foreground: 222 47% 6%;
 
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62% 30%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 217 33% 17%;
     --input: 217 33% 17%;
-    --ring: 262 52% 68%;
+    --ring: 262 83% 68%;
   }
 }
 
@@ -83,21 +92,26 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold;
+    @apply font-bold tracking-tight;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+/* Utility classes */
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-secondary;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  .bg-gradient-hero {
+    @apply bg-gradient-to-r from-primary via-accent to-secondary;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
   }
 }

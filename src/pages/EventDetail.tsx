@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,13 +39,7 @@ export default function EventDetail() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (id) {
-      fetchEvent();
-    }
-  }, [id]);
-
-  const fetchEvent = async () => {
+  const fetchEvent = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("events")
@@ -72,8 +66,8 @@ export default function EventDetail() {
         .single();
 
       if (error) throw error;
-      setEvent(data as any);
-    } catch (error: any) {
+      setEvent(data as Event);
+    } catch (error: unknown) {
       console.error("Error fetching event:", error);
       toast({
         title: "Error",
@@ -83,7 +77,15 @@ export default function EventDetail() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, toast]);
+
+  useEffect(() => {
+    if (id) {
+      fetchEvent();
+    }
+  }, [id, fetchEvent]);
+
+
 
   useEffect(() => {
     if (!id) return;
@@ -102,7 +104,7 @@ export default function EventDetail() {
         (payload) => {
           // Update the event state with the new data from the database
           if (payload.new) {
-            setEvent(prev => prev ? { ...prev, ...payload.new as any } : null);
+            setEvent(prev => prev ? { ...prev, ...(payload.new as Partial<Event>) } : null);
           }
         }
       )
@@ -144,8 +146,9 @@ export default function EventDetail() {
       });
 
       navigate("/my-tickets");
-    } catch (error: any) {
-      if (error.code === "23505") {
+    } catch (error: unknown) {
+      const pgError = error as { code?: string };
+      if (pgError.code === "23505") {
         toast({
           title: "Already Registered",
           description: "You're already registered for this event",

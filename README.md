@@ -1,73 +1,140 @@
-# Welcome to your Lovable project
+# Club Cult - University Event Management Platform
 
-## Project info
+> Your Campus, Your Culture — Discover, register, and experience the best university events.
 
-**URL**: https://lovable.dev/projects/735f8670-0424-43e0-9e24-c5b501056881
+## Tech Stack
 
-## How can I edit this code?
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI Components**: shadcn/ui + Radix UI + Tailwind CSS
+- **Backend**: Supabase (Auth, Database, Storage)
+- **State Management**: TanStack Query
+- **Forms**: React Hook Form + Zod
 
-There are several ways of editing your application.
+## Getting Started
 
-**Use Lovable**
+### Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/735f8670-0424-43e0-9e24-c5b501056881) and start prompting.
+- Node.js 18+ and npm
+- A Supabase project ([create one free](https://supabase.com))
 
-Changes made via Lovable will be committed automatically to this repo.
+### Installation
 
-**Use your preferred IDE**
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd club-cult
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+# Install dependencies
+npm install
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your Supabase credentials
 ```
 
-**Edit a file directly in GitHub**
+### Environment Variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Create a `.env` file with:
 
-**Use GitHub Codespaces**
+```env
+VITE_SUPABASE_URL="https://your-project.supabase.co"
+VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Get these from: [Supabase Dashboard](https://supabase.com/dashboard) → Your Project → Settings → API
 
-## What technologies are used for this project?
+### Development
 
-This project is built with:
+```bash
+# Start development server
+npm run dev
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Build for production
+npm run build
 
-## How can I deploy this project?
+# Preview production build
+npm run preview
 
-Simply open [Lovable](https://lovable.dev/projects/735f8670-0424-43e0-9e24-c5b501056881) and click on Share -> Publish.
+# Run linting
+npm run lint
 
-## Can I connect a custom domain to my Lovable project?
+# Run E2E tests
+npm run test
+```
 
-Yes, you can!
+## Database Setup
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Create a new Supabase project
+2. Run the SQL migrations in `supabase/` folder:
+   - `policies.sql` - RLS policies
+   - `subscription_migration.sql` - Subscription tables
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+3. Create storage bucket:
+   - Go to Storage → Create bucket "event-banners"
+   - Set to Public
+
+## Project Structure
+
+```
+src/
+├── components/       # Reusable UI components
+│   └── ui/          # shadcn/ui components
+├── contexts/        # React contexts (Auth)
+├── hooks/           # Custom React hooks
+├── integrations/    # External integrations (Supabase)
+├── lib/             # Utility functions
+└── pages/           # Page components
+    ├── Home.tsx
+    ├── Auth.tsx
+    ├── AdminDashboard.tsx
+    ├── CreateEvent.tsx
+    └── ...
+```
+
+## Features
+
+### For Students
+- Browse published events
+- Search and filter by category
+- Register for events
+- View tickets with QR codes
+
+### For Club Admins
+- Create and manage events
+- Upload event banners
+- View registrations
+- Subscription management
+
+### Security
+- Row Level Security (RLS) on all tables
+- Role-based access control
+- Scoped storage access per club
+
+## Deployment
+
+### Vercel / Netlify
+
+1. Connect your repository
+2. Set environment variables:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+3. Deploy
+
+### Manual
+
+```bash
+npm run build
+# Deploy the `dist/` folder to any static host
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `npm run test`
+5. Submit a pull request
+
+## License
+
+MIT License - feel free to use this project for your university!

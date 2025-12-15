@@ -1,46 +1,146 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Users, DollarSign, TrendingUp, Eye, Edit, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Plus, Calendar, Users, TrendingUp, Eye, Edit, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import SubscriptionBanner from "@/components/SubscriptionBanner";
 
-const MOCK_STATS = {
-  totalEvents: 12,
-  totalRegistrations: 1234,
-  revenue: 45600,
-  upcomingEvents: 5,
-};
+interface Event {
+  id: string;
+  title: string;
+  event_starts: string;
+  event_ends: string;
+  venue: string;
+  capacity: number;
+  is_paid: boolean;
+  price: number | null;
+  banner_url: string | null;
+  created_at: string;
+  registrations?: { count: number }[];
+  registered_count?: number;
+}
 
-const MOCK_EVENTS = [
-  {
-    id: 1,
-    title: "Tech Fest 2025",
-    date: "Dec 15, 2025",
-    registrations: 234,
-    capacity: 500,
-    revenue: 0,
-    status: "Published",
-  },
-  {
-    id: 2,
-    title: "Annual Cultural Night",
-    date: "Dec 20, 2025",
-    registrations: 456,
-    capacity: 1000,
-    revenue: 136344,
-    status: "Published",
-  },
-  {
-    id: 3,
-    title: "Startup Workshop",
-    date: "Dec 18, 2025",
-    registrations: 89,
-    capacity: 100,
-    revenue: 13261,
-    status: "Published",
-  },
-];
+const PAGE_SIZE = 10;
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalEvents: 0,
+    totalRegistrations: 0,
+    upcomingEvents: 0,
+  });
+  const [events, setEvents] = useState<Event[]>([]);
+
+  // Pagination State
+  const [page, setPage] = useState(0); // 0-indexed
+  const [totalEventsCount, setTotalEventsCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        // Get user's club_id first (Strict Check)
+        const { data: profile, error: profileError } = await supabase
+          .from("user_roles") // Mapping user_profiles -> user_roles
+          .select("club_id, role")
+          .eq("user_id", user.id)
+          .single();
+
+        if (profileError || !profile?.club_id || profile.role !== 'club_admin') {
+          toast({
+            title: "Access Denied",
+            description: "You must be assigned to a club to view admin dashboard.",
+            variant: "destructive"
+          });
+          navigate("/");
+          return;
+        }
+
+        const clubId = profile.club_id;
+
+        // 1. Fetch Stats (Strictly Scoped)
+        const { count: eventsCount, error: eventsError } = await supabase
+          .from("events")
+          .select("*", { count: "exact", head: true })
+          .eq("club_id", clubId);
+
+        if (eventsError) throw eventsError;
+        setTotalEventsCount(eventsCount || 0);
+
+        // Upcoming Events
+        const now = new Date().toISOString();
+        const { count: upcomingCount, error: upcomingError } = await supabase
+          .from("events")
+          .select("*", { count: "exact", head: true })
+          .eq("club_id", clubId)
+          .gt("event_starts", now);
+
+        if (upcomingError) throw upcomingError;
+
+        // 2. Fetch User's Club Events (Paginated)
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+
+        const { data: clubEvents, error: clubEventsError } = await supabase
+          .from("events")
+          .select(`
+            *,
+            registrations:event_registrations(count)
+          `)
+          .eq("club_id", clubId)
+          .order("created_at", { ascending: false })
+          .range(from, to);
+
+        if (clubEventsError) throw clubEventsError;
+
+        // Total Registrations Calculation
+        // Using RLS-safe count on event_registrations as per final prompt
+        const { count: totalRegs } = await supabase
+          .from("event_registrations")
+          .select("*", { count: "exact", head: true });
+
+        setStats({
+          totalEvents: eventsCount || 0,
+          totalRegistrations: totalRegs,
+          upcomingEvents: upcomingCount || 0,
+        });
+
+        setEvents((clubEvents as Event[]) || []);
+
+      } catch (error: unknown) {
+        console.error("Dashboard fetch error:", error);
+        toast({
+          title: "Error loading dashboard",
+          description: error instanceof Error ? error.message : "Please refresh the page.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [user, toast, page, navigate]);
+
+  const totalPages = Math.ceil(totalEventsCount / PAGE_SIZE) || 1;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-7xl mx-auto">
@@ -58,8 +158,11 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
+        {/* Subscription Status Banner */}
+        <SubscriptionBanner />
+
         {/* Stats Grid */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card className="border-l-4 border-l-primary">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -68,7 +171,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">{MOCK_STATS.totalEvents}</div>
+                <div className="text-3xl font-bold">{stats.totalEvents}</div>
                 <Calendar className="w-8 h-8 text-primary opacity-20" />
               </div>
             </CardContent>
@@ -82,7 +185,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">{MOCK_STATS.totalRegistrations}</div>
+                <div className="text-3xl font-bold">{stats.totalRegistrations}</div>
                 <Users className="w-8 h-8 text-secondary opacity-20" />
               </div>
             </CardContent>
@@ -91,27 +194,13 @@ export default function AdminDashboard() {
           <Card className="border-l-4 border-l-accent">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Revenue Generated
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">₹{(MOCK_STATS.revenue / 1000).toFixed(1)}k</div>
-                <DollarSign className="w-8 h-8 text-accent opacity-20" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-primary">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Upcoming Events
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">{MOCK_STATS.upcomingEvents}</div>
-                <TrendingUp className="w-8 h-8 text-primary opacity-20" />
+                <div className="text-3xl font-bold">{stats.upcomingEvents}</div>
+                <TrendingUp className="w-8 h-8 text-accent opacity-20" />
               </div>
             </CardContent>
           </Card>
@@ -122,58 +211,84 @@ export default function AdminDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-2xl">Your Events</CardTitle>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">Published</Button>
-                <Button variant="ghost" size="sm">Draft</Button>
-                <Button variant="ghost" size="sm">Past</Button>
-              </div>
+              {events.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  Page {page + 1} of {totalPages}
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {MOCK_EVENTS.map((event) => (
-                <div 
-                  key={event.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg mb-1">{event.title}</h3>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {event.date}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {event.registrations}/{event.capacity}
-                      </span>
-                      {event.revenue > 0 && (
+            {events.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>No events yet.</p>
+                <Link to="/admin/create-event" className="mt-4 inline-block">
+                  <Button variant="outline">Create your first event</Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-1">{event.title}</h3>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4" />
-                          ₹{event.revenue.toLocaleString()}
+                          <Calendar className="w-4 h-4" />
+                          {format(new Date(event.event_starts), "PPP p")}
                         </span>
-                      )}
+                        <span className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          {/* registrations is now typed */}
+                          {event.registrations?.[0]?.count ?? 0} / {event.capacity}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          {event.is_paid ? `Paid (₹${event.price})` : 'Free'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Link to={`/events/${event.id}`}>
+                        <Button variant="ghost" size="sm">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </Link>
+                      <Link to={`/admin/edit-event/${event.id}`}>
+                        <Button variant="ghost" size="sm" title="Edit Event">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </Link>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Link to={`/admin/events/${event.id}/edit`}>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                    <Link to={`/admin/events/${event.id}/registrations`}>
-                      <Button variant="outline" size="sm">
-                        View Registrations
-                      </Button>
-                    </Link>
-                  </div>
+                ))}
+
+                {/* Pagination Controls */}
+                <div className="flex items-center justify-end gap-2 mt-4 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => p + 1)}
+                    disabled={page >= totalPages - 1}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

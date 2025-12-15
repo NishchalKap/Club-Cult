@@ -1,0 +1,12 @@
+Starting verify_concurrency_and_realtime.js
+Config loaded: URL=https://smnsvbpxkggphitzosyn.supabase.co
+Checking connectivity to https://smnsvbpxkggphitzosyn.supabase.co...
+[ERROR] Connectivity check FAILED: fetch failed
+Starting concurrency verification...
+Creating test user: stress_test_1765129602038@example.com
+[ERROR] Error creating user:
+[ERROR] {
+  "__isAuthError": true,
+  "name": "AuthRetryableFetchError",
+  "status": 0
+}

@@ -1,0 +1,385 @@
+{
+  "report_timestamp": "2025-12-12T15:11:51+05:30",
+  "summary": "NEEDS WORK - 3 Critical issues, 2 High issues, 4 Medium issues found. Critical: (1) validateBannerFile defined but never called - file type/size validation bypassed, (2) Storage orphan cleanup is implemented but may fail silently, (3) Missing description field in CreateEvent form while DB requires it. Core RLS policies appear correctly implemented for club scoping.",
+  
+  "matrix": [
+    {
+      "id": "TC-A1",
+      "title": "Frontend Sanity - Home Page Load",
+      "precondition": "Dev server running",
+      "steps": ["Navigate to http://localhost:8080/"],
+      "expected": "Home page loads with title 'Club Cult - Your Campus, Your Culture'",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["HTTP response confirmed title and meta tags present"]
+    },
+    {
+      "id": "TC-A2",
+      "title": "Supabase Connectivity",
+      "precondition": "Environment variables set in .env",
+      "steps": ["Check VITE_SUPABASE_URL in .env", "Verify client.ts initialization"],
+      "expected": "Supabase client configured with valid URL",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["VITE_SUPABASE_URL=https://xlvylwfnsgyupdhhbvoa.supabase.co"]
+    },
+    {
+      "id": "TC-C1",
+      "title": "Protected Route - Unauthenticated Access to /admin",
+      "precondition": "No user logged in",
+      "steps": ["Navigate to /admin", "Check redirect behavior"],
+      "expected": "Redirect to /auth with 'Authentication Required' toast",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["ProtectedRoute.tsx:29-36 - Correct redirect logic with toast notification"]
+    },
+    {
+      "id": "TC-C2",
+      "title": "Protected Route - Student Access to /admin",
+      "precondition": "User with role='student' logged in",
+      "steps": ["Navigate to /admin", "Check access denial"],
+      "expected": "Redirect to / with 'Admin privileges required' toast",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["ProtectedRoute.tsx:74-88 - Role hierarchy check correctly denies access"]
+    },
+    {
+      "id": "TC-C3",
+      "title": "Admin Dashboard - Club Scoping",
+      "precondition": "club_admin for club 1 logged in",
+      "steps": ["Navigate to /admin", "Check events displayed"],
+      "expected": "Only club 1 events shown",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["AdminDashboard.tsx:93-101 - Query correctly filters by club_id from user_roles"]
+    },
+    {
+      "id": "TC-C4",
+      "title": "Create Event - File Validation Function",
+      "precondition": "Admin logged in, navigates to create event",
+      "steps": ["Upload invalid file type (.pdf)", "Check for validation error"],
+      "expected": "Inline error 'Only JPEG, PNG, and WebP images are allowed'",
+      "result": "FAIL",
+      "severity": "CRITICAL",
+      "evidence": [
+        "CreateEvent.tsx:153-164 - validateBannerFile() function DEFINED but NEVER CALLED",
+        "CreateEvent.tsx:483-485 - onChange handler only calls onChange(e.target.files) without validation",
+        "Invalid files can be submitted to storage"
+      ],
+      "reproduction_steps": [
+        "1. Login as club_admin",
+        "2. Navigate to /admin/create-event",
+        "3. Select a .pdf file in the banner input",
+        "4. Fill other required fields",
+        "5. Submit form - file will upload without type validation"
+      ]
+    },
+    {
+      "id": "TC-C5",
+      "title": "Create Event - File Size Validation",
+      "precondition": "Admin logged in",
+      "steps": ["Upload file > 5MB", "Check for size error"],
+      "expected": "Inline error 'Image must be less than 5MB'",
+      "result": "FAIL",
+      "severity": "CRITICAL",
+      "evidence": [
+        "Same as TC-C4 - validateBannerFile() never invoked",
+        "MAX_IMAGE_SIZE = 5MB defined at line 34 but not enforced"
+      ]
+    },
+    {
+      "id": "TC-C6",
+      "title": "Create Event - Missing Description Field",
+      "precondition": "Admin on create event form",
+      "steps": ["Try to submit event without description"],
+      "expected": "Event description is required per DB schema",
+      "result": "FAIL",
+      "severity": "CRITICAL",
+      "evidence": [
+        "CreateEvent.tsx formSchema (lines 37-46) - NO description field defined",
+        "types.ts:107 - DB requires 'description: string' (not nullable)",
+        "Event insert will fail with database constraint error"
+      ],
+      "reproduction_steps": [
+        "1. Login as club_admin",
+        "2. Go to /admin/create-event",
+        "3. Fill all visible form fields",
+        "4. Submit - No description field exists in form",
+        "5. DB insert fails: 'null value in column description'"
+      ]
+    },
+    {
+      "id": "TC-C7",
+      "title": "Create Event - Orphan Banner Cleanup",
+      "precondition": "Admin submits event with banner",
+      "steps": ["Upload banner", "Simulate DB insert failure", "Check if banner is deleted"],
+      "expected": "Banner file removed from storage on failure",
+      "result": "PASS (with caveat)",
+      "severity": "Medium",
+      "evidence": [
+        "CreateEvent.tsx:236-238 - Cleanup logic exists: supabase.storage.from('event-banners').remove([uploadedPath])",
+        "CAVEAT: No error handling for cleanup failure - may leave orphans on network issues"
+      ]
+    },
+    {
+      "id": "TC-C8",
+      "title": "Create Event - Missing registration_opens/closes",
+      "precondition": "Admin on create event form",
+      "steps": ["Submit form with only visible fields"],
+      "expected": "All required DB fields provided",
+      "result": "FAIL",
+      "severity": "HIGH",
+      "evidence": [
+        "CreateEvent.tsx eventData (lines 207-218) - Missing registration_opens and registration_closes",
+        "types.ts:134-135 - DB requires these fields (not nullable)",
+        "Event insert will fail or use stale defaults"
+      ]
+    },
+    {
+      "id": "TC-D1",
+      "title": "RLS - user_roles visibility",
+      "precondition": "User authenticated",
+      "steps": ["Query user_roles for other users"],
+      "expected": "Only own role visible",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["policies.sql:10-13 - 'users_read_own_role' policy: USING(auth.uid() = user_id)"]
+    },
+    {
+      "id": "TC-D2",
+      "title": "RLS - Events cross-club access (SELECT)",
+      "precondition": "club_admin for club 1",
+      "steps": ["Query events where club_id = 2"],
+      "expected": "Empty result set",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": [
+        "policies.sql:18-29 - 'club_admins_select_own_club_events' policy correctly scopes by club_id",
+        "Public can only see status='published' events (policy line 69-74)"
+      ]
+    },
+    {
+      "id": "TC-D3",
+      "title": "RLS - Events cross-club INSERT",
+      "precondition": "club_admin for club 1",
+      "steps": ["Insert event with club_id = 2"],
+      "expected": "Permission denied",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["policies.sql:32-43 - WITH CHECK ensures club_id matches user's club_id"]
+    },
+    {
+      "id": "TC-D4",
+      "title": "RLS - Events cross-club UPDATE",
+      "precondition": "club_admin for club 1",
+      "steps": ["Update event belonging to club 2"],
+      "expected": "0 rows affected",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["policies.sql:46-66 - Both USING and WITH CHECK scoped to user's club"]
+    },
+    {
+      "id": "TC-D5",
+      "title": "RLS - Student cannot insert events",
+      "precondition": "User with role='student'",
+      "steps": ["Attempt to insert event"],
+      "expected": "Permission denied",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["policies.sql:32-43 - INSERT policy requires role='club_admin' AND matching club_id"]
+    },
+    {
+      "id": "TC-D6",
+      "title": "RLS - Storage scoping for banners",
+      "precondition": "club_admin for club 1",
+      "steps": ["Upload to event-banners/2/evil.jpg"],
+      "expected": "Permission denied",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": [
+        "policies.sql:127-138 - 'Club Admins Upload' policy uses storage.foldername(name)[1] = ur.club_id::text",
+        "Ensures admins can only upload to their club's folder"
+      ]
+    },
+    {
+      "id": "TC-D7",
+      "title": "RLS - Public read of banners",
+      "precondition": "Unauthenticated user",
+      "steps": ["GET existing banner URL"],
+      "expected": "200 OK - Public access",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["policies.sql:122-124 - 'Public Access' policy: USING(bucket_id='event-banners')"]
+    },
+    {
+      "id": "TC-D8",
+      "title": "RLS - Registrations self-insert only",
+      "precondition": "Authenticated user",
+      "steps": ["Insert registration with different user_id"],
+      "expected": "Permission denied",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["policies.sql:95-100 - WITH CHECK(auth.uid() = user_id)"]
+    },
+    {
+      "id": "TC-E1",
+      "title": "Auth - Form validation",
+      "precondition": "On /auth page",
+      "steps": ["Submit with invalid email", "Submit with password < 6 chars"],
+      "expected": "HTML5 validation prevents submission",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["Auth.tsx:150-159 - type='email' and required attributes", "Line 172: minLength={6}"]
+    },
+    {
+      "id": "TC-F1",
+      "title": "UX - Form labels and accessibility",
+      "precondition": "Create event form loaded",
+      "steps": ["Check ARIA labels", "Check form labels"],
+      "expected": "All inputs have associated labels",
+      "result": "PASS (partial)",
+      "severity": "Low",
+      "evidence": [
+        "CreateEvent.tsx uses FormLabel component from shadcn",
+        "Auth.tsx:115,130,149,163 - All inputs have Label components with htmlFor"
+      ]
+    },
+    {
+      "id": "TC-F2",
+      "title": "UX - Toast notifications",
+      "precondition": "Various user actions",
+      "steps": ["Check toast implementation"],
+      "expected": "Non-blocking toasts for success/error",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["App.tsx:23-24 - Both <Toaster /> and <Sonner /> components included"]
+    },
+    {
+      "id": "TC-G1",
+      "title": "Admin Dashboard - Pagination",
+      "precondition": "Club with > 10 events",
+      "steps": ["Load dashboard", "Check pagination controls"],
+      "expected": "Page size 10, Next/Prev buttons work",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["AdminDashboard.tsx:27 - PAGE_SIZE=10", "Lines 269-289 - Pagination UI with disabled states"]
+    },
+    {
+      "id": "TC-G2",
+      "title": "Edit Event - Authorization",
+      "precondition": "club_admin A tries to edit club B's event",
+      "steps": ["Navigate to /admin/edit-event/{club_b_event_id}"],
+      "expected": "RLS blocks data fetch, error shown",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": [
+        "CreateEvent.tsx:117-123 - Fetches event with RLS",
+        "RLS policy ensures only own club's events are returned"
+      ]
+    },
+    {
+      "id": "TC-H1",
+      "title": "Payment - Razorpay Removal",
+      "precondition": "Razorpay removed per previous task",
+      "steps": ["Check Subscription.tsx for payment flow"],
+      "expected": "No Razorpay code, placeholder toast shown",
+      "result": "PASS",
+      "severity": "N/A",
+      "evidence": ["Subscription.tsx:38-41 - handleSubscribe shows 'Coming Soon' toast"]
+    }
+  ],
+
+  "status_summary": {
+    "Admin create-event flow": "NEEDS WORK - Critical: Missing description field, file validation not called, missing registration date fields",
+    "Admin dashboard scoping": "READY - Correctly scoped to club_id via user_roles",
+    "Role-based route protection": "READY - Hierarchy-based check in ProtectedRoute.tsx",
+    "Storage scoping for banners": "READY - RLS policy uses folder path matching",
+    "Event registration flow": "READY - Self-insert only via RLS, duplicate prevention via unique constraint",
+    "Scaling under load": "UNTESTED - Load testing requires k6 setup; code review shows no obvious bottlenecks"
+  },
+
+  "artifacts": {
+    "logs": "qa-artifacts/qa-run-2025-12-12.log",
+    "screenshots": [],
+    "videos": [],
+    "k6_report": null,
+    "sql_logs": "qa-artifacts/rls-policy-analysis.sql"
+  },
+
+  "metrics": {
+    "load": {
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "errorRate": null,
+      "rps": null
+    },
+    "infra": {
+      "cpu": null,
+      "mem": null,
+      "dbConnections": null
+    }
+  },
+
+  "fixList": [
+    {
+      "priority": "CRITICAL",
+      "id": "FIX-01",
+      "title": "Add description field to CreateEvent form",
+      "file": "src/pages/CreateEvent.tsx",
+      "description": "The DB requires a `description` field but the form doesn't have it. Event creation will fail.",
+      "suggested_fix": "Add to formSchema around line 38: `description: z.string().min(10, 'Description must be at least 10 characters')`, add Textarea form field, and include in eventData object"
+    },
+    {
+      "priority": "CRITICAL",
+      "id": "FIX-02",
+      "title": "Call validateBannerFile() before upload",
+      "file": "src/pages/CreateEvent.tsx",
+      "description": "validateBannerFile function exists but is never called. Invalid files can be uploaded.",
+      "line": 483,
+      "suggested_fix": "In onChange handler: `onChange={(e) => { const file = e.target.files?.[0]; if (file && validateBannerFile(file)) { onChange(e.target.files); } }}`"
+    },
+    {
+      "priority": "HIGH",
+      "id": "FIX-03",
+      "title": "Add registration_opens and registration_closes fields",
+      "file": "src/pages/CreateEvent.tsx",
+      "description": "DB schema requires these fields but form doesn't collect them.",
+      "suggested_fix": "Add two date picker fields similar to event_starts/event_ends, set defaults (e.g., registration_opens = now, registration_closes = event_starts)"
+    },
+    {
+      "priority": "MEDIUM",
+      "id": "FIX-04",
+      "title": "Add error handling for orphan cleanup",
+      "file": "src/pages/CreateEvent.tsx",
+      "line": 237,
+      "description": "storage.remove() call may fail silently, leaving orphan files",
+      "suggested_fix": "Wrap cleanup in try-catch, log errors, consider retry logic or background cleanup job"
+    },
+    {
+      "priority": "MEDIUM",
+      "id": "FIX-05",
+      "title": "Show bannerError state in UI",
+      "file": "src/pages/CreateEvent.tsx",
+      "description": "bannerError state is set but never displayed to users",
+      "line": 58,
+      "suggested_fix": "Add {bannerError && <p className='text-destructive text-sm'>{bannerError}</p>} after the file input"
+    },
+    {
+      "priority": "LOW",
+      "id": "FIX-06",
+      "title": "Add aria-describedby to form inputs",
+      "file": "src/pages/CreateEvent.tsx",
+      "description": "Improve accessibility by linking inputs to their descriptions",
+      "suggested_fix": "Add aria-describedby attributes pointing to FormDescription elements"
+    }
+  ],
+
+  "ci_scripts": {
+    "playwright": "npx playwright test --project=chromium",
+    "k6_smoke": "k6 run --vus 50 --duration 3m qa-artifacts/load-test.js",
+    "k6_stress": "k6 run --vus 500 --duration 5m qa-artifacts/load-test.js"
+  },
+
+  "cleanup_sql": "DELETE FROM event_registrations WHERE email LIKE 'qa-test-%@test.com'; DELETE FROM events WHERE title LIKE 'QA-TEST-%'; DELETE FROM user_roles WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE 'qa-test-%@test.com');"
+}
