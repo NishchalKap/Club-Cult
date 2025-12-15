@@ -1,28 +1,98 @@
-# Club Cult - University Event Management Platform
+<div align="center">
 
-> Your Campus, Your Culture — Discover, register, and experience the best university events.
+# 🎭 Club Cult
 
-## Tech Stack
+### *Your Campus Event Hub*
 
-- **Frontend**: React 18 + TypeScript + Vite
-- **UI Components**: shadcn/ui + Radix UI + Tailwind CSS
-- **Backend**: Supabase (Auth, Database, Storage)
-- **State Management**: TanStack Query
-- **Forms**: React Hook Form + Zod
+[![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 
-## Getting Started
+**Discover, Register, and Manage Campus Events with Ease**
+
+[Live Demo](#) • [Features](#-features) • [Installation](#-installation) • [Tech Stack](#-tech-stack)
+
+</div>
+
+---
+
+## ✨ Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 👨‍🎓 For Students
+- 🎫 **Browse Events** - Discover campus events with beautiful cards
+- 📱 **One-Click Registration** - Register with QR code tickets
+- 🎟️ **My Tickets** - View all your registrations in one place
+- 👤 **Profile Management** - Update your info anytime
+
+</td>
+<td width="50%">
+
+### 🏛️ For Club Admins
+- ➕ **Create Events** - Rich event creation with image uploads
+- 📊 **Dashboard** - View registrations and analytics
+- ✏️ **Edit Events** - Update event details on the fly
+- 📋 **Attendee Management** - Track who's coming
+
+</td>
+</tr>
+</table>
+
+### 🔐 Authentication & Security
+- **Email/Password Auth** with Supabase
+- **Forgot Password** flow with email reset
+- **Role-Based Access** (Student, Club Admin, Super Admin)
+- **Row Level Security** on all database tables
+
+---
+
+## 🎨 Screenshots
+
+<div align="center">
+
+| Home Page | Event Details | Profile |
+|:---------:|:-------------:|:-------:|
+| Browse all events | View event info & register | Manage your profile |
+
+</div>
+
+---
+
+## 🛠️ Tech Stack
+
+<div align="center">
+
+| Category | Technology |
+|:--------:|:----------:|
+| **Frontend** | React 18, TypeScript, Vite |
+| **Styling** | Tailwind CSS, shadcn/ui |
+| **Backend** | Supabase (PostgreSQL, Auth, Storage) |
+| **Forms** | React Hook Form, Zod |
+| **State** | TanStack Query |
+| **Routing** | React Router v6 |
+
+</div>
+
+---
+
+## 🚀 Installation
 
 ### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Supabase account
 
-- Node.js 18+ and npm
-- A Supabase project ([create one free](https://supabase.com))
-
-### Installation
+### Quick Start
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
-cd club-cult
+git clone https://github.com/NishchalKap/Club-Cult.git
+cd Club-Cult
 
 # Install dependencies
 npm install
@@ -30,111 +100,79 @@ npm install
 # Set up environment variables
 cp .env.example .env
 # Edit .env with your Supabase credentials
+
+# Start development server
+npm run dev
 ```
 
 ### Environment Variables
 
-Create a `.env` file with:
+Create a `.env` file with your Supabase credentials:
 
 ```env
-VITE_SUPABASE_URL="https://your-project.supabase.co"
-VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-Get these from: [Supabase Dashboard](https://supabase.com/dashboard) → Your Project → Settings → API
+---
 
-### Development
-
-```bash
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Run linting
-npm run lint
-
-# Run E2E tests
-npm run test
-```
-
-## Database Setup
-
-1. Create a new Supabase project
-2. Run the SQL migrations in `supabase/` folder:
-   - `policies.sql` - RLS policies
-   - `subscription_migration.sql` - Subscription tables
-
-3. Create storage bucket:
-   - Go to Storage → Create bucket "event-banners"
-   - Set to Public
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 src/
-├── components/       # Reusable UI components
-│   └── ui/          # shadcn/ui components
-├── contexts/        # React contexts (Auth)
-├── hooks/           # Custom React hooks
-├── integrations/    # External integrations (Supabase)
-├── lib/             # Utility functions
-└── pages/           # Page components
-    ├── Home.tsx
-    ├── Auth.tsx
-    ├── AdminDashboard.tsx
-    ├── CreateEvent.tsx
-    └── ...
+├── components/          # Reusable UI components
+│   ├── ui/             # shadcn/ui components
+│   ├── Navbar.tsx      # Navigation bar
+│   └── ProtectedRoute.tsx
+├── contexts/           # React contexts
+│   └── AuthContext.tsx # Authentication state
+├── hooks/              # Custom hooks
+├── integrations/       # External service configs
+│   └── supabase/       # Supabase client & types
+├── pages/              # Route components
+│   ├── Home.tsx        # Event listing
+│   ├── Auth.tsx        # Login/Signup
+│   ├── Profile.tsx     # User profile
+│   ├── EventDetail.tsx # Event details
+│   ├── CreateEvent.tsx # Event creation
+│   ├── AdminDashboard.tsx
+│   └── SuperAdminDashboard.tsx
+└── lib/                # Utilities
 ```
 
-## Features
+---
 
-### For Students
-- Browse published events
-- Search and filter by category
-- Register for events
-- View tickets with QR codes
+## 👥 User Roles
 
-### For Club Admins
-- Create and manage events
-- Upload event banners
-- View registrations
-- Subscription management
+| Role | Permissions |
+|:----:|:------------|
+| **Student** | Browse events, register, view tickets, manage profile |
+| **Club Admin** | All student perms + create/edit events, view registrations |
+| **Super Admin** | All perms + create clubs, assign admins |
 
-### Security
-- Row Level Security (RLS) on all tables
-- Role-based access control
-- Scoped storage access per club
+---
 
-## Deployment
-
-### Vercel / Netlify
-
-1. Connect your repository
-2. Set environment variables:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_PUBLISHABLE_KEY`
-3. Deploy
-
-### Manual
+## 🔧 Available Scripts
 
 ```bash
-npm run build
-# Deploy the `dist/` folder to any static host
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run lint     # Run ESLint
+npm run preview  # Preview production build
 ```
 
-## Contributing
+---
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests: `npm run test`
-5. Submit a pull request
+## 📄 License
 
-## License
+This project is open source and available under the [MIT License](LICENSE).
 
-MIT License - feel free to use this project for your university!
+---
+
+<div align="center">
+
+**Made with ❤️ by [Nishchal](https://github.com/NishchalKap)**
+
+⭐ Star this repo if you find it helpful!
+
+</div>
