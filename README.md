@@ -12,7 +12,27 @@
 
 **Discover, Register, and Manage Campus Events with Ease**
 
-[Live Demo](#) • [Features](#-features) • [Installation](#-installation) • [Tech Stack](#-tech-stack)
+[Features](#-features) • [Screenshots](#-screenshots) • [Installation](#-installation) • [Tech Stack](#-tech-stack)
+
+</div>
+
+---
+
+## 🎨 Screenshots
+
+<div align="center">
+
+### 🏠 Home Page - Event Discovery
+<img src="docs/images/homepage.png" alt="Home Page" width="800"/>
+
+*Browse all campus events with beautiful cards and easy filtering*
+
+---
+
+### 🔐 Authentication
+<img src="docs/images/auth.png" alt="Login Page" width="500"/>
+
+*Sleek login/signup with student & club owner options*
 
 </div>
 
@@ -48,18 +68,6 @@
 - **Forgot Password** flow with email reset
 - **Role-Based Access** (Student, Club Admin, Super Admin)
 - **Row Level Security** on all database tables
-
----
-
-## 🎨 Screenshots
-
-<div align="center">
-
-| Home Page | Event Details | Profile |
-|:---------:|:-------------:|:-------:|
-| Browse all events | View event info & register | Manage your profile |
-
-</div>
 
 ---
 
